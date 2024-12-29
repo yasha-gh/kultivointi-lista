@@ -1,0 +1,53 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    /* these 2 are to fix error when using  verbatimModuleSyntax (required by svelte 5) */
+    "preserveValueImports": false,
+    "importsNotUsedAsValues": "remove",
+    /* needed for importing path from node */
+    "allowSyntheticDefaultImports": true,
+    /* Needed for z.Infer to work */
+    "strictNullChecks": true,
+
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+
+    /**
+     * Typecheck JS in `.svelte` and `.js` files by default.
+     * Disable checkJs if you'd like to use dynamic types in JS.
+     * Note that setting allowJs false does not prevent the use
+     * of JS in `.svelte` files.
+     */
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+
+    "paths": {
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"],
+      "$stores": ["./src/stores"],
+      "$stores/*": ["./src/stores/*"],
+      "$components": ["./src/lib/components"],
+      "$components/*": ["./src/lib/components/*"],
+      "$pages": ["./src/pages"],
+      "$pages/*": ["./src/pages/*"],
+      "$wails": ["./wailsjs"],
+      "$wails/*": ["./wailsjs/*"]
+    }
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.svelte"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
