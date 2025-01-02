@@ -2,6 +2,7 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { listStore } from "$stores";
     import { Search } from "lucide-svelte";
+    import { cn } from "$lib/utils";
     let { value = $bindable(), ...props } = $props();
 
     const debounceTime = 300;
@@ -21,7 +22,7 @@
     }
 </script>
 
-<aside class="flex gap-2 relative p-2">
+<aside class={cn(`flex gap-2 relative p-2 ${props.class}`)}>
     <Search
         class="text-muted-foreground absolute left-6 top-[50%] h-4 w-4 translate-y-[-50%]"
     />

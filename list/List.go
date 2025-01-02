@@ -129,25 +129,10 @@ func ListItemTitlePushEvent(appCtx context.Context, newTitle *ListItemTitle, com
 	}
 }
 
-// func (l *List) SetListItemTitle(titleId string, title *ListItemTitle) error {
-// 	foundTitle := false
-// 	for i, item := range l.MainList {
-// 		for t, currentTitle := range item.Titles {
-// 			if currentTitle.Id == titleId {
-// 				foundTitle = true
-// 				l.MainList[i].Titles[t] = title
-// 				ListItemTitlePushEvent(l.ctx, title, currentTitle)
-// 			}
-// 		}
-// 	}
-// 	if !foundTitle {
-// 		return fmt.Errorf("Title not found")
-// 	}
-// 	return nil
-// }
 func (l *List) NewDbID() string {
 	return db.NewID()
 }
+
 func (l *List) GetMainList() ([]*ListItem, error) {
 	mainListRes := mainListChResult{}
 	l.getMainListCh<-mainListRes
@@ -157,6 +142,7 @@ func (l *List) GetMainList() ([]*ListItem, error) {
 	}
 	return mainListRes.list, nil
 }
+
 func (l *List) SaveListItem(item *ListItem) bool {
 	log := utils.GetLogger()
 	utils.PrettyPrint(item);
@@ -183,6 +169,16 @@ func (l *List) SaveListItem(item *ListItem) bool {
 	}
 	return true
 }
+
+func (l *List) DeleteListItem(itemId string) bool {
+	listItem := &ListItem{ Id: itemId }
+	err := listItem.Delete(l.ctx, nil)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (l *List) GetListItemsByIDs(itemIDs []string) []*ListItem {
 	log := utils.GetLogger()
 	items, err := GetListByIDs(l.ctx, itemIDs)

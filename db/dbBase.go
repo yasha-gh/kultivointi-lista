@@ -6,9 +6,10 @@ import (
 	"fmt"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
-	_ "github.com/tursodatabase/go-libsql"
-
+	// _ "github.com/tursodatabase/go-libsql"
 	"kultivointi-lista/utils"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Generate a ID for DB, configuration here
@@ -38,7 +39,9 @@ func TursoConnect(dbFile string) (*sql.DB, error) {
 	log := utils.GetLogger()
 	connStr := fmt.Sprintf("file:%s", dbFile)
 	log.Info("DB Connection string", "value", connStr)
-	db, err := sql.Open("libsql", connStr)
+	// sqlite3
+	db, err := sql.Open("sqlite3", connStr)
+	// db, err := sql.Open("libsql", connStr)
 	if err != nil {
 		errorMsg := fmt.Sprintf("TursoConnect: failed to open db")
 		log.Error(errorMsg, "err", err)
@@ -98,18 +101,17 @@ func MaybeCreateTx(appCtx context.Context, tx *sql.Tx) (*MaybeCreateTxResponse, 
 // 		return err
 // 	}
 func (t *MaybeCreateTxResponse) MaybeCommit(rollbackOnError bool) error {
-	log := utils.GetLogger()
 	if !t.TxOnly {
 		err := t.Tx.Commit()
 		if err != nil {
 			if rollbackOnError {
 				rbErr := t.Tx.Rollback()
 				if rbErr != nil {
-					log.Error("failed to rollback changes", "err", err)
+					MaybeLogError(rbErr, "failed to rollback changes", "err", err)
 					return rbErr
 				}
 			}
-			log.Error("failed to commit changes to DB", "err", err)
+			MaybeLogError(err, "failed to commit changes to DB", "err", err)
 			return err
 		}
 	}
@@ -121,5 +123,12 @@ func (t *MaybeCreateTxResponse) MaybeCommit(rollbackOnError bool) error {
 func (t *MaybeCreateTxResponse) MaybeCloseConn() {
 	if t.TxOnly == false && t.Conn != nil {
 		t.Conn.Close()
+	}
+}
+
+func MaybeLogError(originalError error, msg interface{}, keyvals ...interface{}) {
+	log := utils.GetLogger()
+	if originalError != sql.ErrTxDone {
+		log.Error(msg, keyvals...)
 	}
 }

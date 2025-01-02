@@ -10,7 +10,7 @@
     import { siteStore, SignalSite, type SiteSelectOption } from "$stores/siteStore.svelte";
     import { list } from "$wails/go/models";
     let {
-            siteId = $bindable(""),
+            siteId = $bindable(),
             selectchange = (e: SiteSelectOption) => {  },
             ...props
         } = $props();

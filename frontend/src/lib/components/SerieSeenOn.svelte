@@ -16,7 +16,7 @@
     import { CirclePlus, Trash2 } from "lucide-svelte";
     let {
         item = $bindable(
-            new SignalListItem(new list.ListItem()),
+            // new SignalListItem(new list.ListItem()),
         ) as SignalListItem,
         showBorder = true,
         ...props
@@ -48,9 +48,10 @@
     }
     async function addNew() {
         const newId = await NewDbID();
-        const newEp = new SignalEpisodeSeen(new list.EpisodeSeen());
+        const newEp = SignalEpisodeSeen.newDefault(item.id);
+        // const newEp = new SignalEpisodeSeen(new list.EpisodeSeen());
         newEp.id = newId;
-        newEp.itemId = item.id;
+        // newEp.itemId = item.id;
         newEp.siteId = "";
         newEp.site = undefined;
         item.episodesSeenOn.push(newEp);

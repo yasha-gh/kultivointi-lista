@@ -4,6 +4,7 @@ let
   };
 
   libPath = with pkgs; lib.makeLibraryPath [
+    sqld
   ];
 
   in
@@ -19,6 +20,8 @@ let
 
     buildInputs = [
       pkgs.webkitgtk_4_1
+      pkgs.nsis
+      pkgs.upx
       # pkgs.libsoup_3
     ];
 

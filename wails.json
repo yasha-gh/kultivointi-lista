@@ -9,5 +9,12 @@
   "author": {
     "name": "yasha_gh",
     "email": "miika.j.kokko@gmail.com"
+  },
+  "Info": {
+    "companyName": "",
+    "productName": "Kultivointi lista",
+    "productVersion": "0.1.0",
+    "copyright": "Miika Kokko",
+    "comments": "Built using Wails (https://wails.io)"
   }
 }

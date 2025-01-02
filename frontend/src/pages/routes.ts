@@ -2,10 +2,11 @@
 import FrontPage from "$pages/FrontPage.svelte";
 import SeriesPage from "$pages/SeriesPage.svelte";
 import ViewEditSeriePage from "$pages/ViewEditSeriePage.svelte";
+import ToDefaultPage from "$pages/ToDefaultPage.svelte";
 
 export const routes = {
     // Exact path
-    '/': FrontPage,
+    '/': ToDefaultPage,
     '/series': SeriesPage,
     '/serie/:itemId': ViewEditSeriePage,
     // '/settings/devices': DevicesPage,

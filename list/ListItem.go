@@ -79,6 +79,7 @@ func GetListItemByID(id string, appCtx context.Context, tx *sql.Tx) (*ListItem, 
 		&item.CreatedAt,
 	)
 	if err != nil {
+		// fmt.Println("item id", id);
 		log.Error("failed to scan item row", "err", err)
 		return item, err
 	}
@@ -236,6 +237,53 @@ func (l *ListItem) Save(appCtx context.Context, tx *sql.Tx) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (l *ListItem) Delete(appCtx context.Context, tx *sql.Tx) error {
+	log := utils.GetLogger()
+	if l.Id == "" {
+		return fmt.Errorf("No ID on list item")
+	}
+	mctx, err := db.MaybeCreateTx(appCtx, tx)
+	if err != nil {
+		log.Error("Failed to get tx", "err", err)
+		return err
+	}
+	defer mctx.MaybeCloseConn()
+
+	for _, title := range l.Titles {
+		if err := title.Delete(appCtx, mctx.Tx); err != nil {
+			if rbErr := mctx.Tx.Rollback(); rbErr != nil {
+				log.Error("Failed to rollback", "err", rbErr)
+			}
+			return err
+		}
+	}
+
+	for _, epSeen := range l.EpisodesSeenOn {
+		if err := epSeen.Delete(appCtx, mctx.Tx); err != nil {
+			if rbErr := mctx.Tx.Rollback(); rbErr != nil {
+				db.MaybeLogError(rbErr, "Failed to rollback", "err", rbErr)
+				return rbErr
+			}
+			return err
+		}
+	}
+
+	_, err = mctx.Tx.Exec("DELETE FROM list_items WHERE id = ?", l.Id)
+	if err != nil {
+		log.Error("Failed to delete list item", "itemID", l.Id, "err", err)
+		if rbErr := mctx.Tx.Rollback(); rbErr != nil {
+			db.MaybeLogError(rbErr, "Failed to rollback", "err", rbErr)
+			return rbErr
+		}
+		return err
+	}
+
+	if err = mctx.MaybeCommit(true); err != nil {
+		return err
 	}
 	return nil
 }

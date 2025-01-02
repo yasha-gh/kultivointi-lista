@@ -14,7 +14,7 @@ import {
   setSaveStringVal,
   SignalSite,
 } from "$stores";
-import { type LabelValue } from "$lib/utils/index";
+import { type LabelValue, newDBID } from "$lib/utils/index";
 import { EventsOn } from "$wails/runtime";
 
 function setSaveTitleVal(
@@ -133,7 +133,7 @@ export class SignalListItemTitle {
   lang = $state("");
   primaryTitle = $state(false);
   itemId = $state("");
-  constructor(goTitle: list.ListItemTitle) {
+  constructor(goTitle: list.ListItemTitle = new list.ListItemTitle()) {
     this.id = goTitle.id;
     if (this.id === "") {
       NewDbID().then((newId) => (this.id = newId));
@@ -148,6 +148,17 @@ export class SignalListItemTitle {
         // console.log("Changes", this.seasonNum);
       });
     });
+  }
+  public static newDefault(
+    itemId = "",
+    primaryTitle = false,
+  ): SignalListItemTitle {
+    const newTitle = new SignalListItemTitle(new list.ListItemTitle());
+    newTitle.id = newDBID();
+    newTitle.itemId = itemId;
+    newTitle.lang = "zh_romanji";
+    newTitle.primaryTitle = primaryTitle;
+    return newTitle;
   }
 }
 
@@ -168,7 +179,15 @@ export class SignalEpisodeSeen {
   itemId = $state("");
   site = $state<SignalSite | undefined>(undefined);
 
-  constructor(goEpisodeSeen: list.EpisodeSeen) {
+  public static newDefault(itemId = ""): SignalEpisodeSeen {
+    const newEpSeen = new SignalEpisodeSeen(new list.EpisodeSeen());
+    newEpSeen.id = newDBID();
+    newEpSeen.itemId = itemId;
+    newEpSeen.episodesSeen = 0;
+    return newEpSeen;
+  }
+
+  constructor(goEpisodeSeen: list.EpisodeSeen = new list.EpisodeSeen()) {
     this.id = goEpisodeSeen.id;
     if (this.id === "") {
       NewDbID().then((newId) => (this.id = newId));
@@ -212,7 +231,9 @@ export class SignalListItem {
     }
   }
 
-  #title = $state<SignalListItemTitle>(new SignalListItemTitle(new list.ListItemTitle()));
+  #title = $state<SignalListItemTitle>(
+    new SignalListItemTitle(new list.ListItemTitle()),
+  );
   get title() {
     return this.#title;
   }
@@ -359,7 +380,25 @@ export class SignalListItem {
   });
   disableSaving = $state(false);
 
-  constructor(goItem: list.ListItem) {
+  public static newDefault(disableSaving = false): SignalListItem {
+    const newListItem = new SignalListItem(new list.ListItem());
+    newListItem.disableSaving = disableSaving;
+    newListItem.id = newDBID();
+    const primaryTitle = SignalListItemTitle.newDefault(newListItem.id, true);
+    console.log("New default item", "title itemId", primaryTitle.itemId, "item ID", newListItem.id);
+    newListItem.titles.push(primaryTitle);
+    newListItem.title = newListItem.titles[0];
+    newListItem.broadcastType = "ONA";
+    const newEpSeen = SignalEpisodeSeen.newDefault(newListItem.id);
+    newListItem.episodesSeenOn.push(newEpSeen);
+    newListItem.ongoing = true;
+    newListItem.seasonNum = 1;
+    newListItem.type = "base";
+    newListItem.thubmnailImageId = "";
+
+    return newListItem;
+  }
+  constructor(goItem: list.ListItem = new list.ListItem()) {
     // console.log("Signal list item", goItem.id);
     this.id = goItem.id;
     if (this.id === "") {
@@ -404,11 +443,23 @@ export class SignalListItem {
     });
   }
 
-  saveSelf = () => {
-    if (!this.disableSaving) {
-      SaveListItem(list.ListItem.createFrom(this)).then((saveSuccess) => {
-        console.log("Saving success", saveSuccess);
-      });
+  public static fromID = async (itemId: string): Promise<SignalListItem | undefined> => {
+    if(!itemId) {
+      console.error("From id, no itemId provided", itemId);
+    }
+    const listItems = await GetListItemsByIDs([itemId]);
+    if(listItems.length !== 1) {
+      console.error("DB result is not 1", listItems.length);
+      return undefined;
+    }
+    return new SignalListItem(listItems[0]);
+  }
+  saveSelf = async () => {
+    if (!this.disableSaving || !this?.id) {
+      const isSuccess = await SaveListItem(list.ListItem.createFrom(this));
+      console.log("Saving success", isSuccess);
+    } else {
+      console.warn("Saving is disabled");
     }
   };
 }
@@ -478,13 +529,46 @@ export class ListStore {
 
   async nextPage() {
     if (this.currentPage < this.totalPages) {
-      this.GetPage(this.currentPage + 1);
+      await this.GetPage(this.currentPage + 1);
     }
   }
   async prevPage() {
     if (this.currentPage > 0) {
-      this.GetPage(this.currentPage - 1);
+      await this.GetPage(this.currentPage - 1);
     }
+  }
+
+  findItemPage(itemId: string): { found: boolean; pageNum: number } {
+    let currentPage = 1;
+    let pageItem = 0;
+    let found = false;
+    for (const currentId of this.listIDs) {
+      if (pageItem > this.perPage) {
+        pageItem = 0;
+        currentPage++;
+      }
+      if (currentId === itemId) {
+        found = true;
+        break;
+      }
+      pageItem++;
+    }
+    return {
+      found,
+      pageNum: currentPage,
+    };
+  }
+
+  async refreshList(gotoItemPage: boolean = false, toPageItemID = "") {
+    await this.getListIDs();
+    let getPage = 1;
+    if (gotoItemPage) {
+      const itemPage = this.findItemPage(toPageItemID);
+      if (itemPage.found) {
+        getPage = itemPage.pageNum;
+      }
+    }
+    await this.GetPage(getPage);
   }
 
   async search(query: string) {
