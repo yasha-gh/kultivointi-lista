@@ -233,16 +233,20 @@ func (l *ListItem) Save(appCtx context.Context, tx *sql.Tx) error {
 	}
 
 	if !txOnly {
+		log.Info("List item saved", "title", l.Title.Title)
 		err := tx.Commit()
 		if err != nil {
 			return err
 		}
+	} else {
+		log.Info("List item save success in transaction", "title", l.Title.Title)
 	}
 	return nil
 }
 
 func (l *ListItem) Delete(appCtx context.Context, tx *sql.Tx) error {
 	log := utils.GetLogger()
+	log.Info("Delete list item", "title", l.Title)
 	if l.Id == "" {
 		return fmt.Errorf("No ID on list item")
 	}
@@ -281,9 +285,15 @@ func (l *ListItem) Delete(appCtx context.Context, tx *sql.Tx) error {
 		}
 		return err
 	}
-
+	deleteTitle := ""
+	if l.Title != nil {
+		deleteTitle = l.Title.Title
+	}
 	if err = mctx.MaybeCommit(true); err != nil {
+		log.Info("deleted list item ", "title", deleteTitle)
 		return err
+	} else {
+		log.Info("delete list item success in transaction", "title", deleteTitle)
 	}
 	return nil
 }

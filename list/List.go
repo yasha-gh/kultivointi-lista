@@ -171,9 +171,16 @@ func (l *List) SaveListItem(item *ListItem) bool {
 }
 
 func (l *List) DeleteListItem(itemId string) bool {
-	listItem := &ListItem{ Id: itemId }
-	err := listItem.Delete(l.ctx, nil)
+	log := utils.GetLogger()
+	log.Info("List: Delete list item", "itemId", itemId)
+	listItem, err := GetListItemByID(itemId, l.ctx, nil)
 	if err != nil {
+		log.Error("Failed to get list item", "itemId", itemId)
+		return false
+	}
+	err = listItem.Delete(l.ctx, nil)
+	if err != nil {
+		db.MaybeLogError(err, "Failed to delete list item", "err", err)
 		return false
 	}
 	return true

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
+
 	// _ "github.com/tursodatabase/go-libsql"
 	"kultivointi-lista/utils"
 
@@ -89,6 +90,10 @@ func MaybeCreateTx(appCtx context.Context, tx *sql.Tx) (*MaybeCreateTxResponse, 
 		res.DbCtx = dbCtx
 		newTx, err := conn.BeginTx(dbCtx, nil)
 		if err != nil {
+			MaybeLogError(err, "Failed to create transaction")
+			if rbErr := tx.Rollback(); rbErr != nil {
+				MaybeLogError(rbErr, "failed to rollback error", "err", rbErr)
+			}
 			return &MaybeCreateTxResponse{}, err
 		}
 		tx = newTx

@@ -2,7 +2,7 @@
     import OpenListFile from "$lib/components/OpenListFile.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
-    import { CirclePlus } from "lucide-svelte";
+    import { CirclePlus, RefreshCw } from "lucide-svelte";
     import { ScrollArea } from "$components/ui/scroll-area";
     import { listStore } from "$stores/listStore.svelte";
     import ListTableView from "$components/ListTableView.svelte";
@@ -14,8 +14,9 @@
 </script>
 
 <h1 class="text-2xl font-semibold">Kultivointi lista</h1>
-<section class="page-head flex items-center p-4 gap-4">
+<section class="page-head flex items-center p-4 gap-2">
     <ListSearchBar class="grow" bind:value={searchInputVal} />
+    <Button onclick={() => listStore.refreshList()} variant="outline"><RefreshCw /></Button>
     <Button onclick={() => newDialogOpen = !newDialogOpen}>Uusi <CirclePlus /></Button>
 </section>
 <NewListItem bind:open={newDialogOpen} />

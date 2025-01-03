@@ -8,6 +8,8 @@ import (
 	"kultivointi-lista/db"
 	"kultivointi-lista/utils"
 	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 //go:embed sql/upsert_list_item_title.sql
@@ -272,41 +274,58 @@ func (t *ListItemTitle) Save(appCtx context.Context, tx *sql.Tx) error {
 }
 
 func (t *ListItemTitle) Delete(appCtx context.Context, tx *sql.Tx) error {
-
-	txOnly := true
-	if tx == nil {
-		txOnly = false
-		conn, dbCtx, err := db.GetConn(appCtx)
-		if err != nil {
-			return err
-		}
-		defer conn.Close()
-		newTx, err := conn.BeginTx(dbCtx, nil)
-		if err != nil {
-			return err
-		}
-		tx = newTx
+	mctx, err := db.MaybeCreateTx(appCtx, tx)
+	if err != nil {
+		return err
 	}
+	// txOnly := true
+	// if tx == nil {
+	// 	txOnly = false
+	// 	conn, dbCtx, err := db.GetConn(appCtx)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	defer conn.Close()
+	// 	newTx, err := conn.BeginTx(dbCtx, nil)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	tx = newTx
+	// }
 
 	if t.Id == "" {
-		if !txOnly {
-			err := tx.Rollback()
-			if err != nil {
+		if !mctx.TxOnly {
+			if rbErr := mctx.Tx.Rollback(); rbErr != nil {
+				db.MaybeLogError(rbErr, "No ID set failed to rollback", "err", rbErr)
 				return fmt.Errorf("No ID set")
 			}
 		}
 		return fmt.Errorf("No ID set")
 	}
 
-	_, err := tx.Exec("DELETE FROM list_item_titles WHERE id = ?", t.Id)
+	_, err = mctx.Tx.Exec("DELETE FROM list_item_titles WHERE id = ?", t.Id)
 	if err != nil {
+		if !mctx.TxOnly {
+			if rbErr := mctx.Tx.Rollback(); rbErr != nil {
+				db.MaybeLogError(rbErr, "failed to rollback", "err", rbErr)
+			}
+		}
+		log.Error("Failed to delete list item title", "err", err)
 		return err
 	}
 
-	if !txOnly {
-		err := tx.Commit()
-		if err != nil {
-			return err
+	// if !txOnly {
+	// 	err := tx.Commit()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+	err = mctx.MaybeCommit(true)
+	if err != nil {
+		if !mctx.TxOnly {
+			db.MaybeLogError(err, "Failed to delete list item", "title", t.Title)
+		} else {
+			db.MaybeLogError(err, "Failed to delete list item in transaction", "title", t.Title)
 		}
 	}
 	return nil
