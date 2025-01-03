@@ -7,7 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"kultivointi-lista/db"
 	"kultivointi-lista/list"
 	"kultivointi-lista/utils"
@@ -49,6 +49,14 @@ func main() {
 		// OnStartup:        app.startup,
 		OnStartup: func (ctx context.Context) {
 			log := utils.GetLogger()
+			envInfo := runtime.Environment(ctx)
+			if envInfo.BuildType == "production" {
+				isDev := false
+				utils.IsDevMode = &isDev
+			} else {
+				isDev := true
+				utils.IsDevMode = &isDev
+			}
 			settings.SetContext(ctx)
 			dbFile := settings.GetDbAbsolutePath()
 			dbPool, err := db.TursoConnect(dbFile)

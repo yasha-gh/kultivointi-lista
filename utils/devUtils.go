@@ -36,5 +36,16 @@ import (
 // }
 
 func PrettyPrint(i interface{}) {
-	litter.Dump(i)
+	if IsDev() {
+		litter.Dump(i)
+	}
+}
+
+var IsDevMode *bool
+
+func IsDev() bool {
+	if IsDevMode == nil {
+		return true
+	}
+	return *IsDevMode
 }
