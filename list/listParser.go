@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"kultivointi-lista/db"
+	"kultivointi-lista/utils"
 	"os"
 	"regexp"
 	"slices"
@@ -83,7 +84,7 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 	orphanName := ""
 	milExp := ""
 	fullLines := []string{}
-
+	log := utils.GetLogger()
 	// Parse and combine off line titles
 	for i, line := range lines {
 		line := strings.TrimSpace(line)
@@ -180,7 +181,6 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 	// }
 	mainList := make([]*ListItem, 0)
 	for _, line := range fullLines {
-		// fmt.Println(line)
 		parts := strings.Split(line,"\t")
 		if len(parts) != 3 {
 			if strings.Contains(line, "Three Swordsman Half Face") {
@@ -244,7 +244,7 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 			}
 			ep, err := strconv.Atoi(strings.TrimSpace(ep))
 			if err != nil {
-				fmt.Println("Failed to convert episode number to int", err)
+				log.Error("Failed to convert episode number to int", "err", err)
 			} else {
 				serieRow.LastSeenEpisodes = append(serieRow.LastSeenEpisodes, ep)
 			}
@@ -263,13 +263,14 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 			}
 			serieRow.Season = season
 		}
-		// utils.PrettyPrint(serieRow)
+
 		seenOn := EpisodesSeen{}
 		for _, ep := range serieRow.LastSeenEpisodes {
 			seenOn = append(seenOn, &EpisodeSeen{
 				EpisodesSeen: ep,
 			})
 		}
+		primaryTitle := ""
 		serieTitles := ItemTitles{}
 		for i, title  := range serieRow.Titles {
 			primary := true
@@ -280,6 +281,9 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 				Title: title,
 				PrimaryTitle: primary,
 			})
+			if i == 0 {
+				primaryTitle = title
+			}
 		}
 		mainList = append(mainList, &ListItem{
 			SeasonNum: serieRow.Season,
@@ -289,11 +293,9 @@ func (l *ListParser) Parse() ([]*ListItem, error) {
 			EpisodesSeenOn: seenOn,
 			Ongoing: true,
 		})
+		log.Info("Serie parsed", "title", primaryTitle)
 	}
-	// utils.PrettyPrint(list.MainList)
 
-	// utils.PrettyPrint(fullLines)
-
-	fmt.Println("Full lines count:", len(fullLines))
+	log.Info("Import complete", "count", len(fullLines))
 	return mainList, nil
 }
